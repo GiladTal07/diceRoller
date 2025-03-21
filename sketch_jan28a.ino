@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#define TFT1_CS 22  // Chip Select for the first display
-#define TFT2_CS 21  // Chip Select for the second display
-#define TFT3_CS 14  // Chip Select for the third display
+#define TFT1_CS 14  // Chip Select for the first display
+#define TFT2_CS 17  // Chip Select for the second display
+#define TFT3_CS 21  // Chip Select for the third display
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -36,7 +36,7 @@ const unsigned long debounceDelay = 50; // 50ms debounce time
 unsigned long lastDiceChooseTime = 0, lastDiceSelectTime = 0, lastResetTime = 0, lastRollTime = 0;
 int diceChooseLastState = HIGH, diceSelectLastState = HIGH, resetLastState = HIGH, rollLastState = HIGH;
 
-int c = 0;
+//int c = 0;
 
 void setup(void) {
   pinMode(25, INPUT_PULLUP);
@@ -45,7 +45,7 @@ void setup(void) {
   pinMode(13, INPUT_PULLUP);
 
   pinMode(TFT1_CS, OUTPUT);
-  digitalWrite(TFT1_CS, HIGH);
+  digitalWrite(TFT1_CS, LOW);
 
   pinMode(TFT2_CS, OUTPUT);
   digitalWrite(TFT2_CS, LOW);
@@ -106,8 +106,10 @@ void loop() {
       state = idle; 
       break;
     case diceMove:
-      diceNum = (diceNum + 1) % 6;
-      drawDiceSelectionScene(diceNum, 1);
+      if (dice.size() < 5) {
+        diceNum = (diceNum + 1) % 6;
+        drawDiceSelectionScene(diceNum, 1);
+      }
       state = idle;
       break;
       
@@ -125,8 +127,8 @@ void loop() {
       }
       break;
     case roll:
-      //tft.drawNumber(diceNum, 120, 180);
       rolledResults.clear();
+      sum = 0;
       for (int die : dice) {
         static const int ranges[] = {5, 7, 9, 10, 13, 21};
         rolledResults.push_back(random(1 - (die == 3), ranges[die]));  
@@ -142,6 +144,7 @@ void loop() {
         yOffset = 2;
         if (diceType == 3) { //if a d10 is rolled
           xOffset = 0;
+          yOffset -= 4; //remove if too high
           width += 16;
         } else if (diceType == 4) { //if a d12 is rolled
           xOffset = 0;
@@ -150,34 +153,61 @@ void loop() {
           yOffset = 5;
           width += 9;
         }
-        selectTFT(1);
-        tft.fillScreen(TFT_BLACK);
         switch(i) { // checks for # of cube, not type of cube
           case 0:
             selectTFT(2); 
             tft.fillRect(48+xOffset, 108+yOffset, width, height, TFT_BLACK);
-            tft.drawCentreString(num, 60, (size == 2 || die >= 4) ? 112 : 108, size);
+            tft.drawCentreString(num, 60, (diceType >= 4) ? 112 : 108, size);
             break;
           case 1: 
             selectTFT(2); 
             tft.fillRect(168+xOffset, 108+yOffset, width, height, TFT_BLACK);
-            tft.drawCentreString(num, 180, (size == 2 || die >= 4) ? 112 : 108, size);
+            tft.drawCentreString(num, 180, (diceType >= 4) ? 112 : 108, size);
             break;
           case 2: 
             selectTFT(3); 
             tft.fillRect(48+xOffset, 108+yOffset, width, height, TFT_BLACK);
-            tft.drawCentreString(num, 60, (size == 2 || die >= 4) ? 112 : 108, size);
+            tft.drawCentreString(num, 60, (diceType >= 4) ? 112 : 108, size);
             break;
           case 3: 
             selectTFT(3); 
             tft.fillRect(168+xOffset, 108+yOffset, width, height, TFT_BLACK);
-            tft.drawCentreString(num, 180, (size == 2 || die >= 4) ? 112 : 108, size);
+            tft.drawCentreString(num, 180, (diceType >= 4) ? 112 : 108, size);
             break;
           case 4: 
             break;
         }
       }
-      state = initial;
+      selectTFT(1);
+      drawDiceSelectionScene(diceNum, 1);
+      if (rolledResults.size() > 4) {
+        String num = String(rolledResults[4]);
+        diceType = dice[4];
+        size = (diceType == 5) ? 2 : 4;
+        width = 3 * size;
+        height = 6 * size;
+        xOffset = 4;
+        yOffset = 2;
+        if (diceType == 3) {
+          xOffset = 0;
+          yOffset -= 4;
+          width += 16;
+        } else if (diceType == 4) {
+          xOffset = 0;
+          width += 13;
+        } else if (diceType == 5) {
+          xOffset -= 5;
+          yOffset = 5;
+          width += 21;
+          height += 8;
+        }
+        tft.fillRect(108 + xOffset, 108 + yOffset, width, height, TFT_BLACK);
+        tft.drawCentreString(num, 120, (diceType == 3) ? 104 : (diceType >= 4) ? 112 : 108, 4);
+      }
+      tft.setTextColor(TFT_WHITE);
+      tft.drawCentreString("Total: " + String(sum), 120, 168, 4); // Using Font 4
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      state = idle;
       break;
     case reset:
       for (int i = 1; i <= 3; i++) {screenClear(i);}
@@ -243,3 +273,4 @@ void selectTFT(int tftNum) {
   else if (tftNum == 2) {digitalWrite(TFT2_CS, LOW);} 
   else if (tftNum == 3) {digitalWrite(TFT3_CS, LOW);}
 }
+
