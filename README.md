@@ -8,6 +8,8 @@ Functionality to roll up to 5 of any combination of D4, D6, D8, D10, D12, or D20
 
 <img width="744" height="603" alt="Screenshot 2025-07-25 at 14 25 11" src="https://github.com/user-attachments/assets/806d127d-be9d-4f38-bc6e-2d3e5409163c" />
 
+<hr>
+
 **Materials List (for if you want to make your own**
 - 1 ESP32 microcontroller
 - 3 GC9A01A LCD Display (or any other display that supports SPI)
